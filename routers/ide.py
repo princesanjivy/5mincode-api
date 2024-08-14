@@ -8,7 +8,7 @@ router = APIRouter(prefix="/ide")
 firestore = FirebaseFirestore()
 
 
-@router.post("/runCode", tags=["ide"])
+@router.post("/run", tags=["ide"])
 async def run_code(payload: RunCode):
     with open("code.txt", "w") as f:
         f.write(payload.code)

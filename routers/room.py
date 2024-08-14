@@ -5,7 +5,8 @@ from fastapi import APIRouter, HTTPException, WebSocket, WebSocketDisconnect, st
 
 from dao.user import get_user
 from db.firestore import FirebaseFirestore
-from models.room import CreateRoomReq, GenRoomCodeReq
+from db.memstore import Memstore
+from models.room import CreateRoomReq, GenRoomCodeReq, RoomInfo
 from utils.ws import WSConnectionManager
 
 manager = WSConnectionManager()
@@ -52,7 +53,16 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str, room_id: str)
             incoming_data = json.loads(data)
             print(incoming_data)
             if incoming_data["message"] == "START":
-                await manager.broadcast(room_id, "START", {"battle": True})
+                # set is_started to True
+                # move below to room manager class
+                memstore = Memstore()
+                data = memstore.get(room_id)
+                room_info = RoomInfo.parse_obj(data)
+                room_info.is_started = True
+                room_info_dict = room_info.dict()
+                memstore.set(room_id, room_info_dict)
+                
+                await manager.broadcast(room_id, "ROOMINFO", room_info_dict)
     except WebSocketDisconnect:
         print("CALLING DISCONNECT")
         await manager.disconnect(room_id=room_id, client_id=client_id)
